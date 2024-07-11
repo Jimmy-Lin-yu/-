@@ -12,52 +12,6 @@ df_wine.columns = ['Class label', 'Alcohol', 'Malic acid', 'Ash',
                    'Proline']
 
 
-
-from sklearn.linear_model import LogisticRegression                     #經由「正規化」，對過於LR分類器引進一個「penalty(懲罰)」
-LogisticRegression(penalty="l1",solver="liblinear",multi_class="ovr")
-
-import matplotlib.pyplot as plt                                         #觀察每個特徵在L1正規化的變化
-
-fig=plt.figure()
-ax=plt.subplot(111)
-
-colors = ['blue', 'green', 'red', 'cyan',
-          'magenta', 'yellow', 'black',
-          'pink', 'lightgreen', 'lightblue',
-          'gray', 'indigo', 'orange']
-
-weights,params=[],[]
-
-for c in np.arange(-4.,6.):
-    Ir=LogisticRegression(penalty="l1",C=10.**c,solver="liblinear",
-                          multi_class="ovr",random_state=0)
-
-    Ir.fit(X_train_std,y_train)
-    weights.append(Ir.coef_[1])
-    params.append(10**c)
-
-weights=np.array(weights)
-
-for column, color in zip(range(weights.shape[1]),colors): #weights.shape[1] 表示這個權重矩陣的第二個維度的大小，也就是特徵的數量。
-    plt.plot(params,weights[:,column],
-             label=df_wine.columns[column+1],
-             color=color)
-
-plt.axhline(0, color='black', linestyle='--', linewidth=3)
-plt.xlim([10**(-5), 10**5])
-plt.ylabel('weight coefficient')
-plt.xlabel('C')
-plt.xscale('log')
-plt.legend(loc='upper left')
-ax.legend(loc='upper center',
-          bbox_to_anchor=(1.38, 1.03),
-          ncol=1, fancybox=True)
-#plt.savefig('images/04_07.png', dpi=300,
-#            bbox_inches='tight', pad_inches=0.2)
-plt.show()
-
-
-
 from sklearn.base import clone
 from itertools import combinations
 import numpy as np
