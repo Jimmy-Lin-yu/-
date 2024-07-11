@@ -114,3 +114,25 @@ def plot_decision_regions(X, y, classifier, resolution=0.02):
                     edgecolor='black',
                     marker=markers[idx],
                     label=cl)
+
+
+
+from sklearn.linear_model import LogisticRegression                      #我們使用LogisticRegression作為我們的分類器  
+
+pca=PCA(n_components=2)                                                  #使用兩個主成分 
+X_train_pca=pca.fit_transform(X_train_std)          
+X_test_pca=pca.transform(X_test_std)
+
+lr = LogisticRegression(multi_class="ovr",random_state=1, solver='lbfgs')
+lr.fit(X_train_pca, y_train)
+
+
+
+def _calc_score(self, X_train_pca, y_train, X_test_pca, y_test):
+    self.estimator.fit( X_train_pca, y_train)
+    y_pred = self.estimator.predict(X_test_pca)
+    score = self.scoring(y_test, y_pred)  #scoring=accuracy_score
+    return score
+
+print("Training accuracy:",lr.score(X_train_pca,y_train))               #Training accuracy: 0.9838709677419355   #使用兩個主成分就能得到98% 與 92%的正確率
+print("Test accuracy:",lr.score(X_test_pca,y_test))                     #Test accuracy: 0.9259259259259259
