@@ -13,7 +13,7 @@ df_wine.columns = ['Class label', 'Alcohol', 'Malic acid', 'Ash',      #13個特
 
 df_wine.head()
 
-
+----------------------------------------------------------------------------------------------------------------------------------------------
 
 from sklearn.model_selection import train_test_split                   #70% 訓練資料 ； 30%測試資料          
 X,y = df_wine.iloc[:,1:].values, df_wine.iloc[:,0].values # X為值 y為label
@@ -22,24 +22,28 @@ X_train,X_test,y_train,y_test = \
                      stratify=y,
                      random_state=0)
 
-
+----------------------------------------------------------------------------------------------------------------------------------------------
 
 from sklearn.preprocessing import StandardScaler                       # 數據集需經過「標準化」處理
 sc = StandardScaler()
 X_train_std = sc.fit_transform(X_train)
 X_test_std = sc.transform(X_test)
 
-
-
-cov_mat = np.cov(X_train_std.T)                                        # 建立「共變異數矩陣」                                                                       # 「共變異數矩陣」中的「特徵向量(eigen vector)」代表「主成分(最大變異數的方向)」； 對應的「特徵值(eigen value)」會定義它們的「幅度(magnitude)」
+----------------------------------------------------------------------------------------------------------------------------------------------
+# 建立「共變異數矩陣」
+cov_mat = np.cov(X_train_std.T)                                         #「共變異數矩陣」中的「特徵向量(eigen vector)」代表「主成分(最大變異數的方向)」； 對應的「特徵值(eigen value)」會定義它們的「幅度(magnitude)」
 eigen_vals,eigen_vecs = np.linalg.eig(cov_mat)
 print('\nEigenvalues \n%s' % eigen_vals)
 
+----------------------------------------------------------------------------------------------------------------------------------------------
+#總變異數與解釋變異數
+import numpy as np
+import matplotlib.pyplot as plt
 
-tot = sum(eigen_vals)                                                  #使用Numpy的cumsum函數，可以計算「解釋變異數(explained variance)」
+tot = sum(eigen_vals)
 var_exp = [(i/tot) for i in sorted(eigen_vals,reverse=True)]
 cum_var_exp = np.cumsum(var_exp)
-import matplotlib.pyplot as plt
+
 plt.bar(range(1, 14), var_exp, alpha=0.5, align='center',
         label='Individual explained variance')
 plt.step(range(1, 14), cum_var_exp, where='mid',
@@ -51,41 +55,47 @@ plt.tight_layout()
 # plt.savefig('images/05_02.png', dpi=300)
 plt.show()
 
+----------------------------------------------------------------------------------------------------------------------------------------------
+#主成分分析
 
+from sklearn.decomposition import PCA  #decomposition(分解)
 
-# Make a list of (eigenvalue, eigenvector) tuples
-eigen_pairs = [(np.abs(eigen_vals[i]), eigen_vecs[:,i])
-                for i in range(len(eigen_vals))]
+pca=PCA()
 
-# Sort the (eigenvalue, eigenvector) tuples from high to low
-eigen_pairs.sort(key=lambda k: k[0],reverse=True)                     #進行遞減排序
+X_train_pca = pca.fit_transform(X_train_std)
+pca.explained_variance_ratio_
 
-w = np.hstack((eigen_pairs[0][1][:,np.newaxis],                       #我們只選了2個特徵向量
-               eigen_pairs[1][1][:,np.newaxis]))
+pca=PCA(n_components=2) #帶入兩個主成分
+X_train_pca = pca.fit_transform(X_train_std)
+X_test_pca = pca.transform(X_test_std)
 
-print("Watrix W:\n",w)                                                # 建立一個「Projection matrix(投影矩陣)」
-
-
-
-X_train_pca = X_train_std.dot(w)                                      # 124*13維(訓練數據集) * 13*2維(投影矩陣W) = 124*2維
-colors = ['r', 'b', 'g']
-markers = ['s', 'x', 'o']
-
-for l, c, m in zip(np.unique(y_train), colors, markers):
-    plt.scatter(X_train_pca[y_train == l, 0],
-                X_train_pca[y_train == l, 1],
-                c=c, label=l, marker=m)
-
+plt.scatter(X_train_pca[:,0],X_train_pca[:,1])
 plt.xlabel('PC 1')
 plt.ylabel('PC 2')
-plt.legend(loc='lower left')
-plt.tight_layout()
-# plt.savefig('images/05_03.png', dpi=300)
 plt.show()
 
 
+from sklearn.linear_model import LogisticRegression
+X_train_pca=pca.fit_transform(X_train_std)
+X_test_pca=pca.transform(X_test_std)
 
-from matplotlib.colors import ListedColormap                          #視覺化「決策區域圖」
+lr = LogisticRegression(multi_class="ovr",random_state=1, solver='lbfgs')
+lr.fit(X_train_pca, y_train)
+----------------------------------------------------------------------------------------------------------------------------------------------
+#計算帶入主成分後的結果
+def _calc_score(self, X_train_pca, y_train, X_test_pca, y_test):
+    self.estimator.fit( X_train_pca, y_train)
+    y_pred = self.estimator.predict(X_test_pca)
+    score = self.scoring(y_test, y_pred)  #scoring=accuracy_score
+    return score
+
+print("Training accuracy:",lr.score(X_train_pca,y_train))         #Training accuracy: 0.9838709677419355   #使用兩個主成分就能得到98% 與 92%的正確率
+print("Test accuracy:",lr.score(X_test_pca,y_test))               #Test accuracy: 0.9259259259259259
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+#繪製決策區域圖
+from matplotlib.colors import ListedColormap
 
 def plot_decision_regions(X, y, classifier, resolution=0.02):
 
@@ -115,24 +125,10 @@ def plot_decision_regions(X, y, classifier, resolution=0.02):
                     marker=markers[idx],
                     label=cl)
 
-
-
-from sklearn.linear_model import LogisticRegression                      #我們使用LogisticRegression作為我們的分類器  
-
-pca=PCA(n_components=2)                                                  #使用兩個主成分 
-X_train_pca=pca.fit_transform(X_train_std)          
-X_test_pca=pca.transform(X_test_std)
-
-lr = LogisticRegression(multi_class="ovr",random_state=1, solver='lbfgs')
-lr.fit(X_train_pca, y_train)
-
-
-
-def _calc_score(self, X_train_pca, y_train, X_test_pca, y_test):
-    self.estimator.fit( X_train_pca, y_train)
-    y_pred = self.estimator.predict(X_test_pca)
-    score = self.scoring(y_test, y_pred)  #scoring=accuracy_score
-    return score
-
-print("Training accuracy:",lr.score(X_train_pca,y_train))               #Training accuracy: 0.9838709677419355   #使用兩個主成分就能得到98% 與 92%的正確率
-print("Test accuracy:",lr.score(X_test_pca,y_test))                     #Test accuracy: 0.9259259259259259
+plot_decision_regions(X_train_pca, y_train, classifier=lr)
+plt.xlabel('PC 1')
+plt.ylabel('PC 2')
+plt.legend(loc='lower left')
+plt.tight_layout()
+# plt.savefig('images/05_04.png', dpi=300)
+plt.show()
