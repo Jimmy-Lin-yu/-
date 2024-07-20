@@ -3,7 +3,7 @@ import numpy as np
 
 df_wine = pd.read_csv('https://archive.ics.uci.edu/ml/'                #法國葡萄酒資料來源
                       'machine-learning-databases/wine/wine.data',
-                      header=None)
+                      header=None) 
 
 df_wine.columns = ['Class label', 'Alcohol', 'Malic acid', 'Ash',      #13個特徵值
                    'Alcalinity of ash', 'Magnesium', 'Total phenols',
